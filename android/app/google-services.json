@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "604310413777",
+    "firebase_url": "https://mcc-remote-tracker.firebaseio.com",
+    "project_id": "mcc-remote-tracker",
+    "storage_bucket": "mcc-remote-tracker.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604310413777:android:1c830f48d03f57d86940f0",
+        "android_client_info": {
+          "package_name": "com.mcc.tracking"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "604310413777-jgih2ogbpgjhmlp13ajjtamn7o2sdopf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mcc.tracking",
+            "certificate_hash": "12186e73b2a01d6de51ad614cd8265f2cc5dc797"
+          }
+        },
+        {
+          "client_id": "604310413777-ln0mni7hj5blbchm21kqvfeacrcsk9rb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdU1jT4YDnu-PDK3Ssh_quFfdjzlxBpp0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "604310413777-ln0mni7hj5blbchm21kqvfeacrcsk9rb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
