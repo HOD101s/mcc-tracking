@@ -2,8 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:geoflutterfire/geoflutterfire.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() => runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -25,6 +32,9 @@ class FireMapState extends State<FireMap> {
   Marker marker;
   Location _locationTracker = Location();
 
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  Geoflutterfire geo = Geoflutterfire();
+
   static final CameraPosition _initialPosition = const CameraPosition(
     target: LatLng(19.250, 72.855),
     zoom: 18,
@@ -32,6 +42,7 @@ class FireMapState extends State<FireMap> {
 
   CameraPosition _position = _initialPosition;
 
+  // Updats Marker state
   void updateLocationMarker(LocationData newLocation) {
     this.setState(() {
       marker = Marker(
@@ -41,6 +52,8 @@ class FireMapState extends State<FireMap> {
             newLocation.longitude,
           ),
           draggable: false,
+          infoWindow: InfoWindow(
+              title: "(${newLocation.latitude}, ${newLocation.longitude})"),
           zIndex: 2);
     });
   }
@@ -60,11 +73,20 @@ class FireMapState extends State<FireMap> {
     _locationSubscription =
         _locationTracker.onLocationChanged().listen((newLocation) {
       if (_mapController != null) {
-        print("location Subscription Triggered");
-        print(newLocation);
+        print("location Subscription Triggered : ${newLocation}");
         updateLocationMarker(newLocation);
+        updateFirestoreLocation(newLocation);
       }
     });
+  }
+
+  Future<void> updateFirestoreLocation(LocationData newLocation) async {
+    GeoFirePoint point = geo.point(
+        latitude: newLocation.latitude, longitude: newLocation.longitude);
+    return firestore
+        .collection('users')
+        .doc('admin')
+        .update({'lastKnownPosition': point.data});
   }
 
   @override
