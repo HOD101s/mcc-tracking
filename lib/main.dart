@@ -35,6 +35,8 @@ class FireMapState extends State<FireMap> {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   Geoflutterfire geo = Geoflutterfire();
 
+  final List<LatLng> _polyline = [];
+
   static final CameraPosition _initialPosition = const CameraPosition(
     target: LatLng(19.250, 72.855),
     zoom: 18,
@@ -76,7 +78,15 @@ class FireMapState extends State<FireMap> {
         print("location Subscription Triggered : ${newLocation}");
         updateLocationMarker(newLocation);
         updateFirestoreLocation(newLocation);
+        updatePolyline(newLocation);
+        // getGroupMembers();
       }
+    });
+  }
+
+  updatePolyline(LocationData newLocation) {
+    setState(() {
+      _polyline.add(LatLng(newLocation.latitude, newLocation.longitude));
     });
   }
 
@@ -86,8 +96,18 @@ class FireMapState extends State<FireMap> {
     return firestore
         .collection('users')
         .doc('admin')
-        .update({'lastKnownPosition': point.data});
+        .update({'lastKnownPosition': point.geoPoint});
   }
+
+  // Future<void> getGroupMembers() async {
+  //   firestore.collection('user').doc('admin').get().then((user) => {
+  //         firestore
+  //             .collection('Groups')
+  //             .doc(user['userGroups'])
+  //             .get()
+  //             .then((value) => print("Value ${value}"))
+  //       });
+  // }
 
   @override
   void initState() {
@@ -119,6 +139,15 @@ class FireMapState extends State<FireMap> {
         compassEnabled: true,
         onCameraMove: _updateCameraPosition,
         markers: Set.of((marker != null) ? [marker] : []),
+        polylines: Set.of([
+          Polyline(
+            polylineId: PolylineId("User Polyline"),
+            visible: true,
+            width: 5,
+            points: _polyline,
+            color: Colors.blue,
+          )
+        ]),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => zoomToCurrentPosition(),
