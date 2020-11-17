@@ -30,7 +30,8 @@ class FireMapState extends State<FireMap> {
   GoogleMapController _mapController;
   StreamSubscription _locationSubscription;
   Marker marker;
-  Set<Marker> _neighbours = {};
+  Map<String, Marker> _neighbours = {};
+  Set<Marker> _neightbourSet = {};
   Location _locationTracker = Location();
 
   FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -56,7 +57,7 @@ class FireMapState extends State<FireMap> {
           ),
           draggable: false,
           infoWindow: InfoWindow(
-              title: "(${newLocation.latitude}, ${newLocation.longitude})"),
+              title: "Me (${newLocation.latitude}, ${newLocation.longitude})"),
           zIndex: 2);
     });
   }
@@ -83,6 +84,7 @@ class FireMapState extends State<FireMap> {
         updateFirestoreLocation(newLocation);
         updatePolyline(newLocation);
         setGroupMarkers();
+        setNeighbourMarkerSet();
       }
     });
   }
@@ -122,7 +124,7 @@ class FireMapState extends State<FireMap> {
         await firestore.collection('users').doc(user).get();
     GeoPoint loc = userData.data()['lastKnownPosition'];
     setState(() {
-      _neighbours.add(buildNeightbourMarker(loc, id, user));
+      _neighbours[user] = buildNeightbourMarker(loc, id, user);
     });
   }
 
@@ -135,10 +137,17 @@ class FireMapState extends State<FireMap> {
         .forEach((id, user) => {setNeighbours(id, user)});
   }
 
-  Future<void> setGroupMarkers() async {
+  void setNeighbourMarkerSet() {
     setState(() {
-      _neighbours = {};
+      _neightbourSet = {};
     });
+    _neighbours.forEach((k, v) => setState(() {
+          _neightbourSet.add(v);
+        }));
+    print(_neightbourSet);
+  }
+
+  Future<void> setGroupMarkers() async {
     print(_neighbours.length);
     DocumentSnapshot userInfo =
         await firestore.collection('users').doc('admin').get();
@@ -174,7 +183,7 @@ class FireMapState extends State<FireMap> {
         mapType: MapType.normal,
         compassEnabled: true,
         onCameraMove: _updateCameraPosition,
-        markers: _neighbours.union(Set.of((marker != null) ? [marker] : [])),
+        markers: _neightbourSet.union(Set.of((marker != null) ? [marker] : [])),
         polylines: Set.of([
           Polyline(
             polylineId: PolylineId("User Polyline"),
