@@ -30,6 +30,7 @@ class FireMapState extends State<FireMap> {
   GoogleMapController _mapController;
   StreamSubscription _locationSubscription;
   Marker marker;
+  Set<Marker> _neighbours = {};
   Location _locationTracker = Location();
 
   FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -60,8 +61,10 @@ class FireMapState extends State<FireMap> {
     });
   }
 
-  void zoomToCurrentPosition() async {
-    var location = await _locationTracker.getLocation();
+  void zoomToPosition(LocationData location, {bool current = false}) async {
+    if (current) {
+      location = await _locationTracker.getLocation();
+    }
     updateLocationMarker(location);
     _mapController.animateCamera(CameraUpdate.newCameraPosition(
         new CameraPosition(
@@ -79,7 +82,7 @@ class FireMapState extends State<FireMap> {
         updateLocationMarker(newLocation);
         updateFirestoreLocation(newLocation);
         updatePolyline(newLocation);
-        // getGroupMembers();
+        setGroupMarkers();
       }
     });
   }
@@ -99,15 +102,48 @@ class FireMapState extends State<FireMap> {
         .update({'lastKnownPosition': point.geoPoint});
   }
 
-  // Future<void> getGroupMembers() async {
-  //   firestore.collection('user').doc('admin').get().then((user) => {
-  //         firestore
-  //             .collection('Groups')
-  //             .doc(user['userGroups'])
-  //             .get()
-  //             .then((value) => print("Value ${value}"))
-  //       });
-  // }
+  Marker buildNeightbourMarker(GeoPoint loc, int id, String userName) {
+    return Marker(
+        markerId: MarkerId("$userName marker"),
+        position: LatLng(
+          loc.latitude,
+          loc.longitude,
+        ),
+        draggable: false,
+        infoWindow:
+            InfoWindow(title: "$userName (${loc.latitude}, ${loc.longitude})"),
+        zIndex: 2);
+  }
+
+  void setNeighbours(int id, String user) async {
+    if (user == "admin") return;
+    print(user);
+    DocumentSnapshot userData =
+        await firestore.collection('users').doc(user).get();
+    GeoPoint loc = userData.data()['lastKnownPosition'];
+    setState(() {
+      _neighbours.add(buildNeightbourMarker(loc, id, user));
+    });
+  }
+
+  void getGroupMembers(String group) async {
+    DocumentSnapshot userList =
+        await firestore.collection('Groups').doc(group).get();
+    userList
+        .data()["users"]
+        .asMap()
+        .forEach((id, user) => {setNeighbours(id, user)});
+  }
+
+  Future<void> setGroupMarkers() async {
+    setState(() {
+      _neighbours = {};
+    });
+    print(_neighbours.length);
+    DocumentSnapshot userInfo =
+        await firestore.collection('users').doc('admin').get();
+    userInfo.data()["userGroups"].forEach((group) => {getGroupMembers(group)});
+  }
 
   @override
   void initState() {
@@ -138,7 +174,7 @@ class FireMapState extends State<FireMap> {
         mapType: MapType.normal,
         compassEnabled: true,
         onCameraMove: _updateCameraPosition,
-        markers: Set.of((marker != null) ? [marker] : []),
+        markers: _neighbours.union(Set.of((marker != null) ? [marker] : [])),
         polylines: Set.of([
           Polyline(
             polylineId: PolylineId("User Polyline"),
@@ -150,7 +186,7 @@ class FireMapState extends State<FireMap> {
         ]),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => zoomToCurrentPosition(),
+        onPressed: () => zoomToPosition(null, current: true),
         child: Icon(Icons.location_searching),
       ),
     );
