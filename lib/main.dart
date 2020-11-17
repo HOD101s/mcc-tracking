@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -29,10 +32,27 @@ class FireMap extends StatefulWidget {
 class FireMapState extends State<FireMap> {
   GoogleMapController _mapController;
   StreamSubscription _locationSubscription;
-  Marker marker;
+  Marker userMarker; // users location
   Map<String, Marker> _neighbours = {};
   Set<Marker> _neightbourSet = {};
   Location _locationTracker = Location();
+
+  List<String> _markerIconsList = [
+    "assets/markerIcons/blue.png",
+    "assets/markerIcons/yellow.png",
+    "assets/markerIcons/green.png",
+    "assets/markerIcons/purple.png",
+    "assets/markerIcons/lightblue.png",
+  ];
+
+  List<BitmapDescriptor> _markersBitmap = [];
+
+  // _markerIconsList.forEach((path) => {
+  //     setState(() async => {
+  //       markersBitmap.add(await BitmapDescriptor.fromAssetImage(
+  //           ImageConfiguration(size: Size(48, 48)), path))
+  //       })
+  //     });
 
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   Geoflutterfire geo = Geoflutterfire();
@@ -49,8 +69,8 @@ class FireMapState extends State<FireMap> {
   /// Updates User Marker state
   void updateLocationMarker(LocationData newLocation) {
     this.setState(() {
-      marker = Marker(
-          markerId: MarkerId("gpsLocation"),
+      userMarker = Marker(
+          markerId: MarkerId("userLocation"),
           position: LatLng(
             newLocation.latitude,
             newLocation.longitude,
@@ -58,7 +78,7 @@ class FireMapState extends State<FireMap> {
           draggable: false,
           infoWindow: InfoWindow(
               title: "Me (${newLocation.latitude}, ${newLocation.longitude})"),
-          zIndex: 2);
+          zIndex: 3);
     });
   }
 
@@ -118,6 +138,7 @@ class FireMapState extends State<FireMap> {
   /// Marker Icontext is set to userName
   Marker buildNeightbourMarker(GeoPoint loc, int id, String userName) {
     return Marker(
+        icon: _markersBitmap[id % 4],
         markerId: MarkerId("$userName marker"),
         position: LatLng(
           loc.latitude,
@@ -168,10 +189,31 @@ class FireMapState extends State<FireMap> {
         }));
   }
 
+  Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+        targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))
+        .buffer
+        .asUint8List();
+  }
+
+  buildMarkerIcons() {
+    setState(() {
+      _markerIconsList.forEach((path) async {
+        _markersBitmap
+            .add(BitmapDescriptor.fromBytes(await getBytesFromAsset(path, 55)));
+      });
+    });
+    print(_markersBitmap);
+  }
+
   @override
   void initState() {
     super.initState();
     subscribeToUserLocation();
+    buildMarkerIcons();
   }
 
   @override
@@ -197,7 +239,8 @@ class FireMapState extends State<FireMap> {
         mapType: MapType.normal,
         compassEnabled: true,
         onCameraMove: _updateCameraPosition,
-        markers: _neightbourSet.union(Set.of((marker != null) ? [marker] : [])),
+        markers: _neightbourSet
+            .union(Set.of((userMarker != null) ? [userMarker] : [])),
         polylines: Set.of([
           Polyline(
             polylineId: PolylineId("User Polyline"),
