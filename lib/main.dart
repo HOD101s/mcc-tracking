@@ -46,7 +46,7 @@ class FireMapState extends State<FireMap> {
 
   CameraPosition _position = _initialPosition;
 
-  // Updats Marker state
+  /// Updates User Marker state
   void updateLocationMarker(LocationData newLocation) {
     this.setState(() {
       marker = Marker(
@@ -62,6 +62,10 @@ class FireMapState extends State<FireMap> {
     });
   }
 
+  /// Zooms Map to Location
+  ///
+  /// set named parameter {current = true} to zoom to users current location
+  /// or pass custom location to zoom map to
   void zoomToPosition(LocationData location, {bool current = false}) async {
     if (current) {
       location = await _locationTracker.getLocation();
@@ -72,6 +76,7 @@ class FireMapState extends State<FireMap> {
             target: LatLng(location.latitude, location.longitude), zoom: 18)));
   }
 
+  /// Subscriber to auto update user location via GPS
   void subscribeToUserLocation() async {
     if (_locationSubscription != null) {
       _locationSubscription.cancel();
@@ -89,12 +94,14 @@ class FireMapState extends State<FireMap> {
     });
   }
 
+  /// Updates users movement polyline state variable
   updatePolyline(LocationData newLocation) {
     setState(() {
       _polyline.add(LatLng(newLocation.latitude, newLocation.longitude));
     });
   }
 
+  /// Updates users current location in firebase
   Future<void> updateFirestoreLocation(LocationData newLocation) async {
     GeoFirePoint point = geo.point(
         latitude: newLocation.latitude, longitude: newLocation.longitude);
@@ -104,6 +111,11 @@ class FireMapState extends State<FireMap> {
         .update({'lastKnownPosition': point.geoPoint});
   }
 
+  /// Returns Marker object with location, id and userName params
+  ///
+  /// GeoPoint loc holds GPS co-ords for marker location
+  /// @TODO use id to assign custom color
+  /// Marker Icontext is set to userName
   Marker buildNeightbourMarker(GeoPoint loc, int id, String userName) {
     return Marker(
         markerId: MarkerId("$userName marker"),
@@ -117,9 +129,10 @@ class FireMapState extends State<FireMap> {
         zIndex: 2);
   }
 
-  void setNeighbours(int id, String user) async {
+  /// Gets user lastknownlocation from firebase and updates Neighbour HashMap
+  void setNeighboursMap(int id, String user) async {
     if (user == "admin") return;
-    print(user);
+    print("Added $user Marker");
     DocumentSnapshot userData =
         await firestore.collection('users').doc(user).get();
     GeoPoint loc = userData.data()['lastKnownPosition'];
@@ -128,15 +141,24 @@ class FireMapState extends State<FireMap> {
     });
   }
 
+  /// Gets users groupsMembers and calls setNeighboursMap on them
   void getGroupMembers(String group) async {
     DocumentSnapshot userList =
         await firestore.collection('Groups').doc(group).get();
     userList
         .data()["users"]
         .asMap()
-        .forEach((id, user) => {setNeighbours(id, user)});
+        .forEach((id, user) => {setNeighboursMap(id, user)});
   }
 
+  /// Gets users groups to set neighbour markers
+  Future<void> setGroupMarkers() async {
+    DocumentSnapshot userInfo =
+        await firestore.collection('users').doc('admin').get();
+    userInfo.data()["userGroups"].forEach((group) => {getGroupMembers(group)});
+  }
+
+  /// Converts Neighbours HashMap values into Set to populate google map
   void setNeighbourMarkerSet() {
     setState(() {
       _neightbourSet = {};
@@ -144,14 +166,6 @@ class FireMapState extends State<FireMap> {
     _neighbours.forEach((k, v) => setState(() {
           _neightbourSet.add(v);
         }));
-    print(_neightbourSet);
-  }
-
-  Future<void> setGroupMarkers() async {
-    print(_neighbours.length);
-    DocumentSnapshot userInfo =
-        await firestore.collection('users').doc('admin').get();
-    userInfo.data()["userGroups"].forEach((group) => {getGroupMembers(group)});
   }
 
   @override
