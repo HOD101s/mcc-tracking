@@ -34,25 +34,31 @@ class FireMapState extends State<FireMap> {
   StreamSubscription _locationSubscription;
   Marker userMarker; // users location
   Map<String, Marker> _neighbours = {};
-  Set<Marker> _neightbourSet = {};
+  Set<Marker> _neighbourSet = {};
   Location _locationTracker = Location();
 
   List<String> _markerIconsList = [
-    "assets/markerIcons/blue.png",
-    "assets/markerIcons/yellow.png",
-    "assets/markerIcons/green.png",
-    "assets/markerIcons/purple.png",
-    "assets/markerIcons/lightblue.png",
+    "blue",
+    "yellow",
+    "green",
+    "purple",
+    "lightblue",
   ];
 
-  List<BitmapDescriptor> _markersBitmap = [];
+  Map<String, String> _markerColorCodes = {
+    "lightblue": "#3ee3e6",
+    "purple": "#c84bde",
+    "yellow": "#F4B400",
+    "red": "#DB4437",
+    "blue": "#4285F4",
+    "green": "#0F9D58",
+  };
 
-  // _markerIconsList.forEach((path) => {
-  //     setState(() async => {
-  //       markersBitmap.add(await BitmapDescriptor.fromAssetImage(
-  //           ImageConfiguration(size: Size(48, 48)), path))
-  //       })
-  //     });
+  Map<String, BitmapDescriptor> _markersBitmap = {};
+
+  Map<String, List<LatLng>> _neighboursPolyline = {};
+  Map<String, String> _neighbourPolylineColor = {};
+  Set<Polyline> _neighbourPolylineSet = {};
 
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   Geoflutterfire geo = Geoflutterfire();
@@ -136,40 +142,69 @@ class FireMapState extends State<FireMap> {
   /// GeoPoint loc holds GPS co-ords for marker location
   /// @TODO use id to assign custom color
   /// Marker Icontext is set to userName
-  Marker buildNeightbourMarker(GeoPoint loc, int id, String userName) {
+  Marker buildNeightbourMarker(LatLng newPt, String userName) {
     return Marker(
-        icon: _markersBitmap[id % 4],
+        icon: _markersBitmap[_neighbourPolylineColor[userName]],
         markerId: MarkerId("$userName marker"),
-        position: LatLng(
-          loc.latitude,
-          loc.longitude,
-        ),
+        position: newPt,
         draggable: false,
-        infoWindow:
-            InfoWindow(title: "$userName (${loc.latitude}, ${loc.longitude})"),
+        infoWindow: InfoWindow(
+            title: "$userName (${newPt.latitude}, ${newPt.longitude})"),
         zIndex: 2);
   }
 
+  Color hexToColor(String hexString, {String alphaChannel = 'FF'}) {
+    if (hexString == null) return Colors.blue;
+    return Color(int.parse(hexString.replaceFirst('#', '0x$alphaChannel')));
+  }
+
+  Polyline buildNeighboutPolyline(List<LatLng> polylinePoints, String user) {
+    return Polyline(
+      polylineId: PolylineId("$user Polyline"),
+      visible: true,
+      width: 8,
+      points: polylinePoints,
+      color: hexToColor(_neighbourPolylineColor[user]),
+    );
+  }
+
   /// Gets user lastknownlocation from firebase and updates Neighbour HashMap
-  void setNeighboursMap(int id, String user) async {
+  void setNeighboursViz(int id, String user) async {
     if (user == "admin") return;
     print("Added $user Marker");
     DocumentSnapshot userData =
         await firestore.collection('users').doc(user).get();
     GeoPoint loc = userData.data()['lastKnownPosition'];
     setState(() {
-      _neighbours[user] = buildNeightbourMarker(loc, id, user);
+      var newPt = LatLng(
+        loc.latitude,
+        loc.longitude,
+      );
+      var flag = !_neighboursPolyline.containsKey(user);
+      if (flag) {
+        _neighbourPolylineColor[user] =
+            _markerColorCodes[_markerIconsList[id % 4]];
+        print(_neighbourPolylineColor);
+      }
+      _neighbours[user] = buildNeightbourMarker(newPt, user);
+
+      if (flag) {
+        _neighboursPolyline[user] = [];
+        _neighboursPolyline[user].add(newPt);
+      } else if (_neighboursPolyline[user].last != newPt) {
+        _neighboursPolyline[user].add(newPt);
+      }
     });
   }
 
-  /// Gets users groupsMembers and calls setNeighboursMap on them
+  /// Gets users groupsMembers and calls setNeighboursViz on them
   void getGroupMembers(String group) async {
     DocumentSnapshot userList =
         await firestore.collection('Groups').doc(group).get();
     userList
         .data()["users"]
         .asMap()
-        .forEach((id, user) => {setNeighboursMap(id, user)});
+        .forEach((id, user) => {setNeighboursViz(id, user)});
   }
 
   /// Gets users groups to set neighbour markers
@@ -182,10 +217,14 @@ class FireMapState extends State<FireMap> {
   /// Converts Neighbours HashMap values into Set to populate google map
   void setNeighbourMarkerSet() {
     setState(() {
-      _neightbourSet = {};
+      _neighbourSet = {};
+      _neighbourPolylineSet = {};
     });
     _neighbours.forEach((k, v) => setState(() {
-          _neightbourSet.add(v);
+          _neighbourSet.add(v);
+        }));
+    _neighboursPolyline.forEach((k, v) => setState(() {
+          _neighbourPolylineSet.add(buildNeighboutPolyline(v, k));
         }));
   }
 
@@ -201,12 +240,11 @@ class FireMapState extends State<FireMap> {
 
   buildMarkerIcons() {
     setState(() {
-      _markerIconsList.forEach((path) async {
-        _markersBitmap
-            .add(BitmapDescriptor.fromBytes(await getBytesFromAsset(path, 55)));
+      _markerIconsList.forEach((color) async {
+        _markersBitmap[_markerColorCodes[color]] = BitmapDescriptor.fromBytes(
+            await getBytesFromAsset("assets/markerIcons/$color.png", 55));
       });
     });
-    print(_markersBitmap);
   }
 
   @override
@@ -239,17 +277,17 @@ class FireMapState extends State<FireMap> {
         mapType: MapType.normal,
         compassEnabled: true,
         onCameraMove: _updateCameraPosition,
-        markers: _neightbourSet
+        markers: _neighbourSet
             .union(Set.of((userMarker != null) ? [userMarker] : [])),
-        polylines: Set.of([
+        polylines: _neighbourPolylineSet.union(Set.of([
           Polyline(
             polylineId: PolylineId("User Polyline"),
             visible: true,
-            width: 5,
+            width: 8,
             points: _polyline,
             color: Colors.blue,
           )
-        ]),
+        ])),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => zoomToPosition(null, current: true),

@@ -1,5 +1,6 @@
 light blue : 3ee3e6
 purple : c84bde
-yellow : 0F9D58
+yellow : F4B400
 red : DB4437
 blue : 4285F4
+green : 0F9D58
