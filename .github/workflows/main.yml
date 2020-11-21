@@ -22,8 +22,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Export Release Timestamp
-        run: echo "release_$(date +'%Y-%m-%d_%H-%m-%S')" >> $APP_VERSION
       - name: Checkout repository
         uses: actions/checkout@v1
       - name: Set up Java
@@ -50,7 +48,7 @@ jobs:
       - name: Release Apps
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ env.APP_VERSION }}
-          name: ${{ env.APP_VERSION }}
+          tag: v1.0
+          name: release_v1.0
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: "build/app/outputs/apk/release/*.apk,build/ios/iphoneos/app.ipa"
