@@ -26,8 +26,6 @@ jobs:
         run: echo "APP_VERSION=release_$(date +'%Y-%m-%d_%H-%m-%S')" >> $GITHUB_ENV
       - name: Checkout repository
         uses: actions/checkout@v1
-      - name: Install pub Dependencies
-        run: flutter pub get
       - name: Release Apps
         uses: ncipollo/release-action@v1
         with:
