@@ -8,6 +8,7 @@ import 'package:location/location.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracking/routes.dart';
 import 'package:tracking/screens/sign_in/sign_in_screen.dart';
 
 void main() async {
@@ -23,7 +24,10 @@ class MyApp extends StatelessWidget {
       //     home: Scaffold(
       //   body: FireMap(),
       // )
-      home: SignInScreen(),
+      debugShowCheckedModeBanner: false,
+      title: "TRACK ME",
+      initialRoute: SignInScreen.routeName,
+      routes: routes,
     );
   }
 }
