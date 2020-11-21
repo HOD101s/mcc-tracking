@@ -8,6 +8,7 @@ import 'package:location/location.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tracking/screens/sign_in/sign_in_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,9 +20,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        home: Scaffold(
-      body: FireMap(),
-    ));
+      //     home: Scaffold(
+      //   body: FireMap(),
+      // )
+      home: SignInScreen(),
+    );
   }
 }
 
@@ -110,7 +113,7 @@ class FireMapState extends State<FireMap> {
     _locationSubscription =
         _locationTracker.onLocationChanged().listen((newLocation) {
       if (_mapController != null) {
-        print("location Subscription Triggered : ${newLocation}");
+        print("location Subscription Triggered : $newLocation");
         updateLocationMarker(newLocation);
         updateFirestoreLocation(newLocation);
         updatePolyline(newLocation);
