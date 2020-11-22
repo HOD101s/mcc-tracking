@@ -3,10 +3,21 @@ import 'package:tracking/constants.dart';
 import 'package:tracking/screens/fire_map/fire_map_screen.dart';
 import 'package:tracking/screens/sign_in/components/user_form.dart';
 import 'package:tracking/size_config.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:geoflutterfire/geoflutterfire.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // This is the best practice
 import '../components/sign_in_content.dart';
 import '../../../components/default_button.dart';
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await Firebase.initializeApp();
+//   runApp(Body());
+// }
+
+FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 class Body extends StatefulWidget {
   @override
@@ -14,7 +25,15 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
+  var username;
+  var groupname;
   int currentPage = 0;
+  final userAlreadyExistsSnackBar = SnackBar(
+    content: Text('User Already exists'),
+    duration: Duration(seconds: 1),
+  );
+  final creatingGroupSnackBar = SnackBar(content: Text('Creating Group'));
+  final joiningGroupSnackBar = SnackBar(content: Text('Joining Group'));
   List<Map<String, String>> splashData = [
     {"text": "Welcome to Track me!", "image": "assets/images/track_1.png"},
     {
@@ -27,6 +46,19 @@ class _BodyState extends State<Body> {
       "image": "assets/images/track_3.png"
     },
   ];
+
+  void usernameCallback(formusername) {
+    setState(() {
+      username = formusername;
+    });
+  }
+
+  void groupnameCallback(formgroupname) {
+    setState(() {
+      groupname = formgroupname;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -63,10 +95,32 @@ class _BodyState extends State<Body> {
                         (index) => buildDot(index: index),
                       ),
                     ),
-                    UserForm(),
+                    UserForm(usernameCallback, groupnameCallback),
                     DefaultButton(
                       text: "Continue",
-                      press: () {
+                      press: () async {
+                        final fireGroup = await firestore
+                            .collection('Groups')
+                            .doc(groupname)
+                            .get();
+                        if (fireGroup.exists) {
+                          final userInfo = await firestore
+                              .collection('Groups/$groupname/users')
+                              .doc(username)
+                              .get();
+                          if (userInfo.data() != null) {
+                            Scaffold.of(context)
+                                .showSnackBar(userAlreadyExistsSnackBar);
+                            return;
+                          } else {
+                            Scaffold.of(context)
+                                .showSnackBar(joiningGroupSnackBar);
+                          }
+                        } else {
+                          Scaffold.of(context)
+                              .showSnackBar(creatingGroupSnackBar);
+                        }
+
                         Navigator.pushNamedAndRemoveUntil(context,
                             FireMapScreen.routeName, ModalRoute.withName('/'));
                       },

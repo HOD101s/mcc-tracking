@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:tracking/components/custom_surfix_icon.dart';
 import 'package:tracking/components/form_error.dart';
+import 'body.dart';
 
 import '../../../constants.dart';
 import '../../../size_config.dart';
 
 class UserForm extends StatefulWidget {
+  final usernameCallback;
+  final groupnameCallback;
+  UserForm(this.usernameCallback, this.groupnameCallback);
   @override
   _UserFormState createState() => _UserFormState();
 }
@@ -15,6 +19,8 @@ class _UserFormState extends State<UserForm> {
   String username;
   String groupname;
   final List<String> errors = [];
+  final userNameController = TextEditingController();
+  final groupNameController = TextEditingController();
 
   void addError({String error}) {
     if (!errors.contains(error))
@@ -49,8 +55,13 @@ class _UserFormState extends State<UserForm> {
 
   TextFormField buildGroupFormField() {
     return TextFormField(
-      onSaved: (newValue) => groupname = newValue,
+      controller: groupNameController,
+      // onSaved: (newValue) => groupname = newValue,
       onChanged: (value) {
+        setState(() {
+          groupname = groupNameController.text;
+          widget.groupnameCallback(groupname);
+        });
         if (value.isNotEmpty) {
           removeError(error: kPassNullError);
         }
@@ -75,8 +86,13 @@ class _UserFormState extends State<UserForm> {
 
   TextFormField buildUserFormField() {
     return TextFormField(
-      onSaved: (newValue) => username = newValue,
+      // onSaved: (newValue) => username = newValue,
+      controller: userNameController,
       onChanged: (value) {
+        setState(() {
+          username = userNameController.text;
+          widget.usernameCallback(username);
+        });
         if (value.isNotEmpty) {
           removeError(error: kEmailNullError);
         }
