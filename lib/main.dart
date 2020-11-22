@@ -10,6 +10,7 @@ import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracking/routes.dart';
 import 'package:tracking/screens/sign_in/sign_in_screen.dart';
+import 'package:flutter_session/flutter_session.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +72,18 @@ class FireMapState extends State<FireMap> {
   Geoflutterfire geo = Geoflutterfire();
 
   final List<LatLng> _polyline = [];
+
+  String sessionUser;
+  String sessionGroup;
+
+  setSession() async {
+    var userName = await FlutterSession().get("sessionUser");
+    var groupName = await FlutterSession().get("sessionGroup");
+    setState(() {
+      sessionUser = userName;
+      sessionGroup = groupName;
+    });
+  }
 
   static final CameraPosition _initialPosition = const CameraPosition(
     target: LatLng(19.250, 72.855),
@@ -136,11 +149,12 @@ class FireMapState extends State<FireMap> {
 
   /// Updates users current location in firebase
   Future<void> updateFirestoreLocation(LocationData newLocation) async {
+    print("### SESSION $sessionUser $sessionGroup");
     GeoFirePoint point = geo.point(
         latitude: newLocation.latitude, longitude: newLocation.longitude);
     return firestore
-        .collection('users')
-        .doc('admin')
+        .collection('Groups/$sessionGroup/users')
+        .doc(sessionUser)
         .update({'lastKnownPosition': point.geoPoint});
   }
 
@@ -176,12 +190,12 @@ class FireMapState extends State<FireMap> {
   }
 
   /// Gets user lastknownlocation from firebase and updates Neighbour HashMap
-  void setNeighboursViz(int id, String user) async {
-    if (user == "admin") return;
+  void setNeighboursViz(int id, String user, GeoPoint loc) async {
+    if (user == sessionUser) return;
     print("Added $user Marker");
-    DocumentSnapshot userData =
-        await firestore.collection('users').doc(user).get();
-    GeoPoint loc = userData.data()['lastKnownPosition'];
+    // DocumentSnapshot userData =
+    //     await firestore.collection('users').doc(user).get();
+    // GeoPoint loc = userData.data()['lastKnownPosition'];
     setState(() {
       var newPt = LatLng(
         loc.latitude,
@@ -204,21 +218,16 @@ class FireMapState extends State<FireMap> {
     });
   }
 
-  /// Gets users groupsMembers and calls setNeighboursViz on them
-  void getGroupMembers(String group) async {
-    DocumentSnapshot userList =
-        await firestore.collection('Groups').doc(group).get();
-    userList
-        .data()["users"]
-        .asMap()
-        .forEach((id, user) => {setNeighboursViz(id, user)});
-  }
-
-  /// Gets users groups to set neighbour markers
+  /// Gets users to set neighbour markers
   Future<void> setGroupMarkers() async {
-    DocumentSnapshot userInfo =
-        await firestore.collection('users').doc('admin').get();
-    userInfo.data()["userGroups"].forEach((group) => {getGroupMembers(group)});
+    await firestore
+        .collection('Groups')
+        .doc(sessionGroup)
+        .collection('users')
+        .get()
+        .then((value) => value.docs.asMap().forEach((id, element) {
+              setNeighboursViz(id, element.id, element['lastKnownPosition']);
+            }));
   }
 
   /// Converts Neighbours HashMap values into Set to populate google map
@@ -257,6 +266,7 @@ class FireMapState extends State<FireMap> {
   @override
   void initState() {
     super.initState();
+    setSession();
     subscribeToUserLocation();
     buildMarkerIcons();
   }

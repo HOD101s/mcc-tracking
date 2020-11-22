@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:tracking/constants.dart';
+import 'package:tracking/main.dart';
 import 'package:tracking/screens/fire_map/fire_map_screen.dart';
 import 'package:tracking/screens/sign_in/components/user_form.dart';
 import 'package:tracking/size_config.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_session/flutter_session.dart';
 
 // This is the best practice
 import '../components/sign_in_content.dart';
@@ -111,16 +115,24 @@ class _BodyState extends State<Body> {
                           if (userInfo.data() != null) {
                             Scaffold.of(context)
                                 .showSnackBar(userAlreadyExistsSnackBar);
-                            return;
                           } else {
+                            firestore
+                                .collection('Groups/$groupname/users')
+                                .doc(username)
+                                .set({'lastKnownPosition': GeoPoint(0, 0)});
                             Scaffold.of(context)
                                 .showSnackBar(joiningGroupSnackBar);
                           }
                         } else {
+                          firestore
+                              .collection('Groups/$groupname/users')
+                              .doc(username)
+                              .set({'lastKnownPosition': GeoPoint(0, 0)});
                           Scaffold.of(context)
                               .showSnackBar(creatingGroupSnackBar);
                         }
-
+                        await FlutterSession().set("sessionUser", username);
+                        await FlutterSession().set("sessionGroup", groupname);
                         Navigator.pushNamedAndRemoveUntil(context,
                             FireMapScreen.routeName, ModalRoute.withName('/'));
                       },
