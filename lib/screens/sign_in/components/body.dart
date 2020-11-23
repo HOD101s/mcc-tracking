@@ -1,13 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:tracking/constants.dart';
-import 'package:tracking/main.dart';
 import 'package:tracking/screens/fire_map/fire_map_screen.dart';
 import 'package:tracking/screens/sign_in/components/user_form.dart';
 import 'package:tracking/size_config.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_session/flutter_session.dart';
 
