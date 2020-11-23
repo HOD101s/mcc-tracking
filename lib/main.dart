@@ -23,9 +23,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      //     home: Scaffold(
-      //   body: FireMap(),
-      // )
       debugShowCheckedModeBanner: false,
       title: "TRACK ME",
       initialRoute: SignInScreen.routeName,
@@ -106,7 +103,8 @@ class FireMapState extends State<FireMap> {
           ),
           draggable: false,
           infoWindow: InfoWindow(
-              title: "Me (${newLocation.latitude}, ${newLocation.longitude})"),
+              title:
+                  "Me (${newLocation.latitude.toStringAsFixed(4)}, ${newLocation.longitude.toStringAsFixed(4)})"),
           zIndex: 3);
     });
   }
@@ -166,14 +164,15 @@ class FireMapState extends State<FireMap> {
   /// GeoPoint loc holds GPS co-ords for marker location
   /// @TODO use id to assign custom color
   /// Marker Icontext is set to userName
-  Marker buildNeightbourMarker(LatLng newPt, String userName) {
+  Marker buildNeighbourMarker(LatLng newPt, String userName) {
     return Marker(
         icon: _markersBitmap[_neighbourPolylineColor[userName]],
         markerId: MarkerId("$userName marker"),
         position: newPt,
         draggable: false,
         infoWindow: InfoWindow(
-            title: "$userName (${newPt.latitude}, ${newPt.longitude})"),
+            title:
+                "$userName (${newPt.latitude.toStringAsFixed(4)}, ${newPt.longitude.toStringAsFixed(4)})"),
         zIndex: 2);
   }
 
@@ -192,7 +191,7 @@ class FireMapState extends State<FireMap> {
     );
   }
 
-  /// Gets user lastknownlocation from firebase and updates Neighbour HashMap
+  /// Updates Neighbour location and polyline information
   void setNeighboursViz(int id, String user, GeoPoint loc) async {
     if (user == sessionUser) return;
     print("Added $user Marker");
@@ -207,14 +206,12 @@ class FireMapState extends State<FireMap> {
             _markerColorCodes[_markerIconsList[id % 4]];
         groupMembers
             .add(ListTile(leading: Icon(Icons.group), title: Text(user)));
-      }
-      _neighbours[user] = buildNeightbourMarker(newPt, user);
-
-      if (flag) {
         _neighboursPolyline[user] = [];
         _neighboursPolyline[user].add(newPt);
+        _neighbours[user] = buildNeighbourMarker(newPt, user);
       } else if (_neighboursPolyline[user].last != newPt) {
         _neighboursPolyline[user].add(newPt);
+        _neighbours[user] = buildNeighbourMarker(newPt, user);
       }
     });
   }
@@ -233,16 +230,17 @@ class FireMapState extends State<FireMap> {
 
   /// Converts Neighbours HashMap values into Set to populate google map
   void setNeighbourMarkerSet() {
+    Set<Marker> _neighbourSetTemp = {};
+    Set<Polyline> _neighbourPolylineSetTemp = {};
+
+    _neighbours.forEach((k, v) => _neighbourSetTemp.add(v));
+    _neighboursPolyline.forEach(
+        (k, v) => _neighbourPolylineSetTemp.add(buildNeighboutPolyline(v, k)));
+
     setState(() {
-      _neighbourSet = {};
-      _neighbourPolylineSet = {};
+      _neighbourSet = _neighbourSetTemp;
+      _neighbourPolylineSet = _neighbourPolylineSetTemp;
     });
-    _neighbours.forEach((k, v) => setState(() {
-          _neighbourSet.add(v);
-        }));
-    _neighboursPolyline.forEach((k, v) => setState(() {
-          _neighbourPolylineSet.add(buildNeighboutPolyline(v, k));
-        }));
   }
 
   Future<Uint8List> getBytesFromAsset(String path, int width) async {
@@ -255,6 +253,7 @@ class FireMapState extends State<FireMap> {
         .asUint8List();
   }
 
+  /// Initialize various marker Icons into a list
   buildMarkerIcons() {
     setState(() {
       _markerIconsList.forEach((color) async {
@@ -279,8 +278,6 @@ class FireMapState extends State<FireMap> {
     }
     super.dispose();
   }
-
-  Widget buildDrawerGroupList() {}
 
   @override
   Widget build(BuildContext context) {
@@ -318,6 +315,8 @@ class FireMapState extends State<FireMap> {
                 title: Text(
                   sessionUser,
                 )),
+
+            /// list of username ListTiles
             ...groupMembers,
           ],
         ),
