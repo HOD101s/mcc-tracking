@@ -101,7 +101,7 @@ class _BodyState extends State<Body> {
                     ),
                     UserForm(usernameCallback, groupnameCallback),
                     DefaultButton(
-                      text: "Continue",
+                      text: "Start Tracking",
                       press: () async {
                         final fireGroup = await firestore
                             .collection('Groups')
