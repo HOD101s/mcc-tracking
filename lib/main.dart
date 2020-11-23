@@ -207,9 +207,11 @@ class FireMapState extends State<FireMap> {
         groupMembers
             .add(ListTile(leading: Icon(Icons.group), title: Text(user)));
         _neighboursPolyline[user] = [];
-        _neighboursPolyline[user].add(newPt);
-        _neighbours[user] = buildNeighbourMarker(newPt, user);
-      } else if (_neighboursPolyline[user].last != newPt) {
+        // _neighboursPolyline[user].add(newPt);
+        // _neighbours[user] = buildNeighbourMarker(newPt, user);
+      }
+      if ((_neighboursPolyline[user].length == 0 && newPt != LatLng(0, 0)) ||
+          _neighboursPolyline[user].last != newPt) {
         _neighboursPolyline[user].add(newPt);
         _neighbours[user] = buildNeighbourMarker(newPt, user);
       }
