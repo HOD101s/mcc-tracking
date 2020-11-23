@@ -282,9 +282,38 @@ class FireMapState extends State<FireMap> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text("MCC"),
-      // ),
+      appBar: AppBar(
+        title: Text("Track Me"),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              child: Column(children: [
+                Container(
+                    child: Text(
+                  'Track Me',
+                  style: TextStyle(color: Colors.white, fontSize: 50),
+                )),
+                Container(
+                    child: Text(
+                  sessionGroup,
+                  style: TextStyle(color: Colors.white10, fontSize: 50),
+                ))
+              ]),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+            ),
+            ListTile(
+                leading: Icon(Icons.person),
+                title: Text(
+                  sessionUser,
+                )),
+          ],
+        ),
+      ),
       body: GoogleMap(
         initialCameraPosition: _position,
         onMapCreated: _onMapCreated,
