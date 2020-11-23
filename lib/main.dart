@@ -10,6 +10,8 @@ import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracking/routes.dart';
 import 'package:tracking/screens/sign_in/sign_in_screen.dart';
+import 'package:flutter_session/flutter_session.dart';
+import 'constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +23,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      //     home: Scaffold(
-      //   body: FireMap(),
-      // )
       debugShowCheckedModeBanner: false,
       title: "TRACK ME",
       initialRoute: SignInScreen.routeName,
@@ -72,6 +71,20 @@ class FireMapState extends State<FireMap> {
 
   final List<LatLng> _polyline = [];
 
+  List<Widget> groupMembers = [];
+
+  String sessionUser;
+  String sessionGroup;
+
+  setSession() async {
+    var userName = await FlutterSession().get("sessionUser");
+    var groupName = await FlutterSession().get("sessionGroup");
+    setState(() {
+      sessionUser = userName;
+      sessionGroup = groupName;
+    });
+  }
+
   static final CameraPosition _initialPosition = const CameraPosition(
     target: LatLng(19.250, 72.855),
     zoom: 18,
@@ -90,7 +103,8 @@ class FireMapState extends State<FireMap> {
           ),
           draggable: false,
           infoWindow: InfoWindow(
-              title: "Me (${newLocation.latitude}, ${newLocation.longitude})"),
+              title:
+                  "Me (${newLocation.latitude.toStringAsFixed(4)}, ${newLocation.longitude.toStringAsFixed(4)})"),
           zIndex: 3);
     });
   }
@@ -136,11 +150,12 @@ class FireMapState extends State<FireMap> {
 
   /// Updates users current location in firebase
   Future<void> updateFirestoreLocation(LocationData newLocation) async {
+    print("### SESSION $sessionUser $sessionGroup");
     GeoFirePoint point = geo.point(
         latitude: newLocation.latitude, longitude: newLocation.longitude);
     return firestore
-        .collection('users')
-        .doc('admin')
+        .collection('Groups/$sessionGroup/users')
+        .doc(sessionUser)
         .update({'lastKnownPosition': point.geoPoint});
   }
 
@@ -149,14 +164,15 @@ class FireMapState extends State<FireMap> {
   /// GeoPoint loc holds GPS co-ords for marker location
   /// @TODO use id to assign custom color
   /// Marker Icontext is set to userName
-  Marker buildNeightbourMarker(LatLng newPt, String userName) {
+  Marker buildNeighbourMarker(LatLng newPt, String userName) {
     return Marker(
         icon: _markersBitmap[_neighbourPolylineColor[userName]],
         markerId: MarkerId("$userName marker"),
         position: newPt,
         draggable: false,
         infoWindow: InfoWindow(
-            title: "$userName (${newPt.latitude}, ${newPt.longitude})"),
+            title:
+                "$userName (${newPt.latitude.toStringAsFixed(4)}, ${newPt.longitude.toStringAsFixed(4)})"),
         zIndex: 2);
   }
 
@@ -175,13 +191,10 @@ class FireMapState extends State<FireMap> {
     );
   }
 
-  /// Gets user lastknownlocation from firebase and updates Neighbour HashMap
-  void setNeighboursViz(int id, String user) async {
-    if (user == "admin") return;
+  /// Updates Neighbour location and polyline information
+  void setNeighboursViz(int id, String user, GeoPoint loc) async {
+    if (user == sessionUser) return;
     print("Added $user Marker");
-    DocumentSnapshot userData =
-        await firestore.collection('users').doc(user).get();
-    GeoPoint loc = userData.data()['lastKnownPosition'];
     setState(() {
       var newPt = LatLng(
         loc.latitude,
@@ -191,48 +204,43 @@ class FireMapState extends State<FireMap> {
       if (flag) {
         _neighbourPolylineColor[user] =
             _markerColorCodes[_markerIconsList[id % 4]];
-        print(_neighbourPolylineColor);
-      }
-      _neighbours[user] = buildNeightbourMarker(newPt, user);
-
-      if (flag) {
+        groupMembers
+            .add(ListTile(leading: Icon(Icons.group), title: Text(user)));
         _neighboursPolyline[user] = [];
         _neighboursPolyline[user].add(newPt);
+        _neighbours[user] = buildNeighbourMarker(newPt, user);
       } else if (_neighboursPolyline[user].last != newPt) {
         _neighboursPolyline[user].add(newPt);
+        _neighbours[user] = buildNeighbourMarker(newPt, user);
       }
     });
   }
 
-  /// Gets users groupsMembers and calls setNeighboursViz on them
-  void getGroupMembers(String group) async {
-    DocumentSnapshot userList =
-        await firestore.collection('Groups').doc(group).get();
-    userList
-        .data()["users"]
-        .asMap()
-        .forEach((id, user) => {setNeighboursViz(id, user)});
-  }
-
-  /// Gets users groups to set neighbour markers
+  /// Gets users to set neighbour markers
   Future<void> setGroupMarkers() async {
-    DocumentSnapshot userInfo =
-        await firestore.collection('users').doc('admin').get();
-    userInfo.data()["userGroups"].forEach((group) => {getGroupMembers(group)});
+    await firestore
+        .collection('Groups')
+        .doc(sessionGroup)
+        .collection('users')
+        .get()
+        .then((value) => value.docs.asMap().forEach((id, element) {
+              setNeighboursViz(id, element.id, element['lastKnownPosition']);
+            }));
   }
 
   /// Converts Neighbours HashMap values into Set to populate google map
   void setNeighbourMarkerSet() {
+    Set<Marker> _neighbourSetTemp = {};
+    Set<Polyline> _neighbourPolylineSetTemp = {};
+
+    _neighbours.forEach((k, v) => _neighbourSetTemp.add(v));
+    _neighboursPolyline.forEach(
+        (k, v) => _neighbourPolylineSetTemp.add(buildNeighboutPolyline(v, k)));
+
     setState(() {
-      _neighbourSet = {};
-      _neighbourPolylineSet = {};
+      _neighbourSet = _neighbourSetTemp;
+      _neighbourPolylineSet = _neighbourPolylineSetTemp;
     });
-    _neighbours.forEach((k, v) => setState(() {
-          _neighbourSet.add(v);
-        }));
-    _neighboursPolyline.forEach((k, v) => setState(() {
-          _neighbourPolylineSet.add(buildNeighboutPolyline(v, k));
-        }));
   }
 
   Future<Uint8List> getBytesFromAsset(String path, int width) async {
@@ -245,6 +253,7 @@ class FireMapState extends State<FireMap> {
         .asUint8List();
   }
 
+  /// Initialize various marker Icons into a list
   buildMarkerIcons() {
     setState(() {
       _markerIconsList.forEach((color) async {
@@ -257,6 +266,7 @@ class FireMapState extends State<FireMap> {
   @override
   void initState() {
     super.initState();
+    setSession();
     subscribeToUserLocation();
     buildMarkerIcons();
   }
@@ -272,9 +282,45 @@ class FireMapState extends State<FireMap> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text("MCC"),
-      // ),
+      appBar: AppBar(
+        title: Text("Track Me"),
+        backgroundColor: kPrimaryColor,
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                        child: Text(
+                      'Track Me',
+                      style: TextStyle(color: kPrimaryLightColor, fontSize: 50),
+                    )),
+                    Container(
+                        child: Text(
+                      sessionGroup,
+                      style: TextStyle(color: kTextColor, fontSize: 50),
+                    ))
+                  ]),
+              decoration: BoxDecoration(
+                color: kPrimaryColor,
+              ),
+            ),
+            ListTile(
+                leading: Icon(Icons.person),
+                title: Text(
+                  sessionUser,
+                )),
+
+            /// list of username ListTiles
+            ...groupMembers,
+          ],
+        ),
+      ),
       body: GoogleMap(
         initialCameraPosition: _position,
         onMapCreated: _onMapCreated,
