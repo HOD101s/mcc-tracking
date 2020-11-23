@@ -11,6 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tracking/routes.dart';
 import 'package:tracking/screens/sign_in/sign_in_screen.dart';
 import 'package:flutter_session/flutter_session.dart';
+import 'constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +73,8 @@ class FireMapState extends State<FireMap> {
   Geoflutterfire geo = Geoflutterfire();
 
   final List<LatLng> _polyline = [];
+
+  List<Widget> groupMembers = [];
 
   String sessionUser;
   String sessionGroup;
@@ -193,9 +196,6 @@ class FireMapState extends State<FireMap> {
   void setNeighboursViz(int id, String user, GeoPoint loc) async {
     if (user == sessionUser) return;
     print("Added $user Marker");
-    // DocumentSnapshot userData =
-    //     await firestore.collection('users').doc(user).get();
-    // GeoPoint loc = userData.data()['lastKnownPosition'];
     setState(() {
       var newPt = LatLng(
         loc.latitude,
@@ -205,7 +205,8 @@ class FireMapState extends State<FireMap> {
       if (flag) {
         _neighbourPolylineColor[user] =
             _markerColorCodes[_markerIconsList[id % 4]];
-        print(_neighbourPolylineColor);
+        groupMembers
+            .add(ListTile(leading: Icon(Icons.group), title: Text(user)));
       }
       _neighbours[user] = buildNeightbourMarker(newPt, user);
 
@@ -279,31 +280,37 @@ class FireMapState extends State<FireMap> {
     super.dispose();
   }
 
+  Widget buildDrawerGroupList() {}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Track Me"),
+        backgroundColor: kPrimaryColor,
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: <Widget>[
             DrawerHeader(
-              child: Column(children: [
-                Container(
-                    child: Text(
-                  'Track Me',
-                  style: TextStyle(color: Colors.white, fontSize: 50),
-                )),
-                Container(
-                    child: Text(
-                  sessionGroup,
-                  style: TextStyle(color: Colors.white10, fontSize: 50),
-                ))
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                        child: Text(
+                      'Track Me',
+                      style: TextStyle(color: kPrimaryLightColor, fontSize: 50),
+                    )),
+                    Container(
+                        child: Text(
+                      sessionGroup,
+                      style: TextStyle(color: kTextColor, fontSize: 50),
+                    ))
+                  ]),
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: kPrimaryColor,
               ),
             ),
             ListTile(
@@ -311,6 +318,7 @@ class FireMapState extends State<FireMap> {
                 title: Text(
                   sessionUser,
                 )),
+            ...groupMembers,
           ],
         ),
       ),
