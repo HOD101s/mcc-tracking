@@ -12,7 +12,7 @@
 
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="tracking"
+        android:label="TRACK ME"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
