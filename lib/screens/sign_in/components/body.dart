@@ -34,15 +34,21 @@ class _BodyState extends State<Body> {
   final creatingGroupSnackBar = SnackBar(content: Text('Creating Group'));
   final joiningGroupSnackBar = SnackBar(content: Text('Joining Group'));
   List<Map<String, String>> splashData = [
-    {"text": "Welcome to Track me!", "image": "assets/images/track_1.png"},
+    {
+      "text": "Welcome to Track me!",
+      "image": "assets/images/track_1.png",
+      "title": "TRACK ME"
+    },
     {
       "text":
           "We help people easily connect and track with your friends and family",
-      "image": "assets/images/track_2.png"
+      "image": "assets/images/track_2.png",
+      "title": "Track your family"
     },
     {
       "text": "Let's start with superfast onboarding!",
-      "image": "assets/images/track_3.png"
+      "image": "assets/images/track_3.png",
+      "title": "Track your friends"
     },
   ];
 
@@ -77,6 +83,7 @@ class _BodyState extends State<Body> {
                 itemBuilder: (context, index) => SignInContent(
                   image: splashData[index]["image"],
                   text: splashData[index]['text'],
+                  title: splashData[index]['title'],
                 ),
               ),
             ),

@@ -8,8 +8,9 @@ class SignInContent extends StatelessWidget {
     Key key,
     this.text,
     this.image,
+    this.title,
   }) : super(key: key);
-  final String text, image;
+  final String text, image, title;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +18,7 @@ class SignInContent extends StatelessWidget {
       children: <Widget>[
         Spacer(),
         Text(
-          "TRACK ME",
+          title,
           style: TextStyle(
             fontSize: getProportionateScreenWidth(36),
             color: kPrimaryColor,
