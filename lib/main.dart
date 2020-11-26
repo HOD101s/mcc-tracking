@@ -294,13 +294,13 @@ class FireMapState extends State<FireMap> {
           children: <Widget>[
             DrawerHeader(
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
                         child: Text(
-                      'Track Me',
-                      style: TextStyle(color: kPrimaryLightColor, fontSize: 50),
+                      'TRACK ME',
+                      style: TextStyle(color: kTextColor, fontSize: 50),
                     )),
                     Container(
                         child: Text(
@@ -309,8 +309,10 @@ class FireMapState extends State<FireMap> {
                     ))
                   ]),
               decoration: BoxDecoration(
-                color: kPrimaryColor,
-              ),
+                  color: kPrimaryColor,
+                  image: new DecorationImage(
+                      image: AssetImage("assets/images/map-locations.jpg"),
+                      fit: BoxFit.cover)),
             ),
             ListTile(
                 leading: Icon(Icons.person),
