@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -42,6 +43,8 @@ class FireMapState extends State<FireMap> {
   Map<String, Marker> _neighbours = {};
   Set<Marker> _neighbourSet = {};
   Location _locationTracker = Location();
+
+  FlutterLocalNotificationsPlugin fltrNotification;
 
   List<String> _markerIconsList = [
     "blue",
@@ -107,6 +110,8 @@ class FireMapState extends State<FireMap> {
                   "Me (${newLocation.latitude.toStringAsFixed(4)}, ${newLocation.longitude.toStringAsFixed(4)})"),
           zIndex: 3);
     });
+    _showNotification(0, "My Location",
+        "(${newLocation.latitude.toString()}, ${newLocation.longitude.toString()})");
   }
 
   /// Zooms Map to Location
@@ -265,10 +270,36 @@ class FireMapState extends State<FireMap> {
     });
   }
 
+  Future _showNotification(int id, String title, String msg) async {
+    var androidDetails = new AndroidNotificationDetails("Track Me", "MCC", "",
+        importance: Importance.Min,
+        enableVibration: false,
+        onlyAlertOnce: true);
+    var iSODetails = new IOSNotificationDetails();
+    var generalNotificationDetails =
+        new NotificationDetails(androidDetails, iSODetails);
+
+    await fltrNotification.show(id, title, msg, generalNotificationDetails,
+        payload: "Track Me");
+  }
+
+  Future onSelectNotification(String payload) async {
+    await fltrNotification.cancelAll();
+  }
+
   @override
   void initState() {
     super.initState();
     setSession();
+
+    var androidInitilize = new AndroidInitializationSettings('icon');
+    var iOSinitilize = new IOSInitializationSettings();
+    var initilizationsSettings =
+        new InitializationSettings(androidInitilize, iOSinitilize);
+    fltrNotification = new FlutterLocalNotificationsPlugin();
+    fltrNotification.initialize(initilizationsSettings,
+        onSelectNotification: onSelectNotification);
+
     subscribeToUserLocation();
     buildMarkerIcons();
   }
@@ -300,12 +331,18 @@ class FireMapState extends State<FireMap> {
                     Container(
                         child: Text(
                       'TRACK ME',
-                      style: TextStyle(color: kTextColor, fontSize: 50),
+                      style: TextStyle(
+                          color: kTextColor,
+                          fontSize: 50,
+                          backgroundColor: Colors.white),
                     )),
                     Container(
                         child: Text(
                       sessionGroup,
-                      style: TextStyle(color: kTextColor, fontSize: 50),
+                      style: TextStyle(
+                          color: kTextColor,
+                          fontSize: 50,
+                          backgroundColor: Colors.white),
                     ))
                   ]),
               decoration: BoxDecoration(

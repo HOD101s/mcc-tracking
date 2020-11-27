@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:tracking/constants.dart';
 import 'package:tracking/screens/fire_map/fire_map_screen.dart';
 import 'package:tracking/screens/sign_in/components/user_form.dart';
@@ -27,12 +28,16 @@ class _BodyState extends State<Body> {
   var username;
   var groupname;
   int currentPage = 0;
+
+  FlutterLocalNotificationsPlugin fltrNotification;
+
   final userAlreadyExistsSnackBar = SnackBar(
     content: Text('User Already exists'),
     duration: Duration(seconds: 1),
   );
   final creatingGroupSnackBar = SnackBar(content: Text('Creating Group'));
   final joiningGroupSnackBar = SnackBar(content: Text('Joining Group'));
+
   List<Map<String, String>> splashData = [
     {
       "text": "Welcome to Track me!",
@@ -62,6 +67,35 @@ class _BodyState extends State<Body> {
     setState(() {
       groupname = formgroupname;
     });
+  }
+
+  Future _showNotification(int id, String title, String msg) async {
+    var androidDetails = new AndroidNotificationDetails("Track Me", "MCC", "",
+        importance: Importance.Min,
+        enableVibration: false,
+        onlyAlertOnce: true);
+    var iSODetails = new IOSNotificationDetails();
+    var generalNotificationDetails =
+        new NotificationDetails(androidDetails, iSODetails);
+
+    await fltrNotification.show(id, title, msg, generalNotificationDetails,
+        payload: "Track Me");
+  }
+
+  Future onSelectNotification(String payload) async {
+    await fltrNotification.cancelAll();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    var androidInitilize = new AndroidInitializationSettings('icon');
+    var iOSinitilize = new IOSInitializationSettings();
+    var initilizationsSettings =
+        new InitializationSettings(androidInitilize, iOSinitilize);
+    fltrNotification = new FlutterLocalNotificationsPlugin();
+    fltrNotification.initialize(initilizationsSettings,
+        onSelectNotification: onSelectNotification);
   }
 
   @override
@@ -109,6 +143,7 @@ class _BodyState extends State<Body> {
                             .collection('Groups')
                             .doc(groupname)
                             .get();
+                        print(fireGroup);
                         if (fireGroup.exists) {
                           final userInfo = await firestore
                               .collection('Groups/$groupname/users')
@@ -122,17 +157,18 @@ class _BodyState extends State<Body> {
                                 .collection('Groups/$groupname/users')
                                 .doc(username)
                                 .set({'lastKnownPosition': GeoPoint(0, 0)});
-                            Scaffold.of(context)
-                                .showSnackBar(joiningGroupSnackBar);
+                            // Scaffold.of(context)
+                            //     .showSnackBar(joiningGroupSnackBar);
                           }
                         } else {
                           firestore
                               .collection('Groups/$groupname/users')
                               .doc(username)
                               .set({'lastKnownPosition': GeoPoint(0, 0)});
-                          Scaffold.of(context)
-                              .showSnackBar(creatingGroupSnackBar);
+                          // Scaffold.of(context)
+                          //     .showSnackBar(creatingGroupSnackBar);
                         }
+                        _showNotification(0, "Let's Begin", "Reading Location");
                         await FlutterSession().set("sessionUser", username);
                         await FlutterSession().set("sessionGroup", groupname);
                         Navigator.pushNamedAndRemoveUntil(context,
