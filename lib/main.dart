@@ -272,7 +272,7 @@ class FireMapState extends State<FireMap> {
 
   Future _showNotification(int id, String title, String msg) async {
     var androidDetails = new AndroidNotificationDetails("Track Me", "MCC", "",
-        importance: Importance.Min,
+        importance: Importance.Max,
         enableVibration: false,
         onlyAlertOnce: true);
     var iSODetails = new IOSNotificationDetails();
