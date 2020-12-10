@@ -1,4 +1,4 @@
-# TRACK ME
+# Locate US
 
 Track your friends and family with a tap of your finger.
 

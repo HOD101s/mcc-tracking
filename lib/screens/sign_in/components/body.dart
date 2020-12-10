@@ -40,20 +40,20 @@ class _BodyState extends State<Body> {
 
   List<Map<String, String>> splashData = [
     {
-      "text": "Welcome to Track me!",
+      "text": "Welcome to LOCATE US!",
       "image": "assets/images/track_1.png",
-      "title": "TRACK ME"
+      "title": "LOCATE US"
     },
     {
       "text":
-          "We help people easily connect and track with your friends and family",
+          "We help people easily connect and locate your friends and family",
       "image": "assets/images/track_2.png",
-      "title": "Track your family"
+      "title": "Locate your family"
     },
     {
       "text": "Let's start with superfast onboarding!",
       "image": "assets/images/track_3.png",
-      "title": "Track your friends"
+      "title": "Locate your friends"
     },
   ];
 
@@ -70,7 +70,8 @@ class _BodyState extends State<Body> {
   }
 
   Future _showNotification(int id, String title, String msg) async {
-    var androidDetails = new AndroidNotificationDetails("Track Me", "MCC", "",
+    var androidDetails = new AndroidNotificationDetails(
+        "LOCATE US", "My Location", "",
         importance: Importance.Min,
         enableVibration: false,
         onlyAlertOnce: true);
@@ -79,7 +80,7 @@ class _BodyState extends State<Body> {
         new NotificationDetails(androidDetails, iSODetails);
 
     await fltrNotification.show(id, title, msg, generalNotificationDetails,
-        payload: "Track Me");
+        payload: "LOCATE US");
   }
 
   Future onSelectNotification(String payload) async {

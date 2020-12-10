@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: "TRACK ME",
+      title: "LOCATE US",
       initialRoute: SignInScreen.routeName,
       routes: routes,
     );
@@ -271,7 +271,8 @@ class FireMapState extends State<FireMap> {
   }
 
   Future _showNotification(int id, String title, String msg) async {
-    var androidDetails = new AndroidNotificationDetails("Track Me", "MCC", "",
+    var androidDetails = new AndroidNotificationDetails(
+        "LOCATE US", "My Location", "",
         importance: Importance.Max,
         enableVibration: false,
         onlyAlertOnce: true);
@@ -280,7 +281,7 @@ class FireMapState extends State<FireMap> {
         new NotificationDetails(androidDetails, iSODetails);
 
     await fltrNotification.show(id, title, msg, generalNotificationDetails,
-        payload: "Track Me");
+        payload: "LOCATE US");
   }
 
   Future onSelectNotification(String payload) async {
@@ -316,7 +317,7 @@ class FireMapState extends State<FireMap> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Track Me"),
+        title: Text("LOCATE US"),
         backgroundColor: kPrimaryColor,
       ),
       drawer: Drawer(
@@ -330,7 +331,7 @@ class FireMapState extends State<FireMap> {
                   children: [
                     Container(
                         child: Text(
-                      'TRACK ME',
+                      'LOCATE US',
                       style: TextStyle(
                           color: kTextColor,
                           fontSize: 50,
@@ -370,6 +371,7 @@ class FireMapState extends State<FireMap> {
         zoomControlsEnabled: false,
         mapType: MapType.normal,
         compassEnabled: true,
+        mapToolbarEnabled: false,
         onCameraMove: _updateCameraPosition,
         markers: _neighbourSet
             .union(Set.of((userMarker != null) ? [userMarker] : [])),
